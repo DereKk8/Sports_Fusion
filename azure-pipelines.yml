@@ -3,19 +3,12 @@ trigger:
   branches:
     include:
     - main
-  pullRequest:
-    branches:
-    - main
+
 
 pool:
   vmImage: 'ubuntu-latest' # Specifies the Ubuntu agent to use
 
 steps:
-- task: GitVersion@5 #use task to generate version.
-  displayName: 'Get Version'
-  inputs:
-    versionSpec: '5.x'
-    useConfigFile: false
 
 - task: NodeTool@0
   displayName: 'Setup Node.js'
