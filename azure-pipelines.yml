@@ -1,0 +1,43 @@
+# Azure DevOps Pipeline Definition
+trigger:
+  branches:
+    include:
+    - main
+  pullRequest:
+    branches:
+    - main
+
+pool:
+  vmImage: 'ubuntu-latest' # Specifies the Ubuntu agent to use
+
+steps:
+- task: GitVersion@5 #use task to generate version.
+  displayName: 'Get Version'
+  inputs:
+    versionSpec: '5.x'
+    useConfigFile: false
+
+- task: NodeTool@0
+  displayName: 'Setup Node.js'
+  inputs:
+    versionSpec: '20.x' # Specifies Node.js version 20
+  
+- task: Npm@1
+  displayName: 'Install dependencies'
+  inputs:
+    command: 'install'
+    workingDir: '$(System.DefaultWorkingDirectory)'  # Ensure this is the root of your repo
+    
+- task: Npm@1
+  displayName: 'Typecheck'
+  inputs:
+    command: 'custom'
+    customCommand: 'run typecheck'
+    workingDir: '$(System.DefaultWorkingDirectory)'
+
+- task: Npm@1
+  displayName: 'Run linting'
+  inputs:
+    command: 'custom'
+    customCommand: 'run lint'
+    workingDir: '$(System.DefaultWorkingDirectory)'
