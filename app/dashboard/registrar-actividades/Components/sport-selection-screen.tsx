@@ -4,6 +4,7 @@ import { useState } from "react"
 import { SportCategory } from "./sport-category"
 import { ArrowRight, ChevronRight } from "lucide-react"
 import { persistSelectedActivities } from "../actions"
+import { LoadingState } from "./loading-state"
 
 // Definición de los deportes por categoría
 const sportsData = [
@@ -105,6 +106,8 @@ export function SportSelectionScreen() {
 
   return (
     <div className="container max-w-6xl mx-auto px-8 py-12 bg-[#050505] min-h-screen text-white">
+      {isLoading && <LoadingState />}
+      
       <div className="absolute top-0 left-0 w-full h-64 bg-gradient-to-b from-[#0A0A0A] to-transparent opacity-50 pointer-events-none"></div>
 
       {/* Header con navegación */}
