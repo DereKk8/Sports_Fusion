@@ -3,6 +3,7 @@
 import { useState } from "react"
 import { SportCategory } from "./sport-category"
 import { ArrowRight, ChevronRight } from "lucide-react"
+import { persistSelectedActivities } from "../actions"
 
 // Definición de los deportes por categoría
 const sportsData = [
@@ -61,9 +62,45 @@ const sportsData = [
 
 export function SportSelectionScreen() {
   const [selectedSports, setSelectedSports] = useState<string[]>([])
+  const [isLoading, setIsLoading] = useState(false)
 
   const toggleSport = (sportId: string) => {
     setSelectedSports((prev) => (prev.includes(sportId) ? prev.filter((id) => id !== sportId) : [...prev, sportId]))
+  }
+
+  const handleContinue = async () => {
+    if (selectedSports.length === 0) return
+
+    setIsLoading(true)
+    try {
+      // Map selected sports to the required format
+      const selectedSportsData = selectedSports.map(sportId => {
+        const category = sportsData.find(cat => cat.sports.some(s => s.id === sportId))
+        const sport = category?.sports.find(s => s.id === sportId)
+        
+        return {
+          id: sportId,
+          name: sport?.name || '',
+          category: {
+            id: category?.id || '',
+            title: category?.title || ''
+          }
+        }
+      })
+
+      const result = await persistSelectedActivities(selectedSportsData)
+      
+      if (result.success) {
+        // TODO: Navigate to next step or show success message
+        console.log('Activities persisted successfully:', result.sessionId)
+      } else {
+        console.error('Failed to persist activities:', result.error)
+      }
+    } catch (error) {
+      console.error('Error:', error)
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   return (
@@ -90,15 +127,16 @@ export function SportSelectionScreen() {
             Cancelar
           </button>
           <button
-            disabled={selectedSports.length === 0}
+            disabled={selectedSports.length === 0 || isLoading}
+            onClick={handleContinue}
             className={`px-6 py-2 rounded-md flex items-center justify-center gap-2 font-medium transition-all ${
-              selectedSports.length > 0
+              selectedSports.length > 0 && !isLoading
                 ? "bg-gradient-to-r from-[#4D9FFF] to-[#4DFF9F] text-black hover:opacity-90 active:scale-[0.98]"
                 : "bg-[#111111] text-gray-600 cursor-not-allowed"
             }`}
           >
-            Continuar
-            <ArrowRight className="h-4 w-4" />
+            {isLoading ? 'Guardando...' : 'Continuar'}
+            {!isLoading && <ArrowRight className="h-4 w-4" />}
           </button>
         </div>
       </div>
