@@ -1,7 +1,7 @@
 "use server"
 
 import { getDb } from "@/server/db"
-import { sesiones, actividades } from "@/server/db/schema"
+import { sesiones, actividades, actividades_fuerza } from "@/server/db/schema"
 import { createId } from '@paralleldrive/cuid2'
 
 type SelectedSport = {
@@ -10,6 +10,14 @@ type SelectedSport = {
   category: {
     title: string
   }
+}
+
+type StrenghActivity = {
+  id: string
+  activityId: string
+  series: number
+  repetitions: number
+  weight: number
 }
 
 export async function persistSelectedActivities(selectedSports: SelectedSport[]) {
@@ -42,3 +50,23 @@ export async function persistSelectedActivities(selectedSports: SelectedSport[])
     return { success: false, error: 'Failed to persist activities' }
   }
 } 
+
+export async function persistStrenghActivity(activity: StrenghActivity) {
+  try {
+    const db = await getDb()
+    
+    // Insert the strength activity
+    await db.insert(actividades_fuerza).values({
+      id: createId(),
+      actividad_id: activity.activityId,
+      series: activity.series,
+      repeticiones: activity.repetitions,
+      peso: activity.weight
+    })
+
+    return { success: true }
+  } catch (error) {
+    console.error('Error persisting strength activity:', error)
+    return { success: false, error: 'Failed to persist strength activity' }
+  }
+}
