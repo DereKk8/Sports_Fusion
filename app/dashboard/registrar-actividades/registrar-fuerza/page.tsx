@@ -7,7 +7,7 @@ import { Label } from "@/app/components/ui/label"
 import { Card, CardContent } from "@/app/components/ui/card"
 import { useState } from "react"
 import { useRouter } from "next/navigation"
-import { persistStrenghActivity } from "@/app/dashboard/registrar-actividades/actions"
+import { persistStrenghActivity } from "../actions"
 import { LoadingState } from "@/app/dashboard/registrar-actividades/Components/loading-state"
 
 export default function RegistroFuerza() {

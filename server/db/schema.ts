@@ -47,5 +47,5 @@ export const actividades_distancia = singlestoreTable("actividades_distancia", {
   actividad_id: varchar("actividad_id", { length: 36 }).notNull(),
   distancia: float("distancia").$type<number>(),
   tiempo: int("tiempo").notNull(), // Almacenando tiempo en segundos
-  ritmo: float("ritmo").$type<number>() // Campo calculado: tiempo / distancia / 60.0
+  ritmo: int("ritmo").$type<number>() // Campo calculado: tiempo / distancia ritmo en segundos por kilometro
 });

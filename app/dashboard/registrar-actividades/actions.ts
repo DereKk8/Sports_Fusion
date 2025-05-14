@@ -1,7 +1,7 @@
 "use server"
 
 import { getDb } from "@/server/db"
-import { sesiones, actividades, actividades_fuerza, actividades_duracion } from "@/server/db/schema"
+import { sesiones, actividades, actividades_fuerza, actividades_duracion, actividades_distancia } from "@/server/db/schema"
 import { createId } from '@paralleldrive/cuid2'
 
 type SelectedSport = {
@@ -24,6 +24,14 @@ type DurationActivity = {
   id: string
   activityId: string
   duration: number
+}
+
+type DistanceActivity = {
+  id: string
+  activityId: string
+  distance: number
+  time: number
+  ritmo: number
 }
 
 export async function persistSelectedActivities(selectedSports: SelectedSport[]) {
@@ -92,5 +100,25 @@ export async function persistDurationActivity(activity: DurationActivity) {
   } catch (error) {
     console.error('Error persisting duration activity:', error)
     return { success: false, error: 'Failed to persist duration activity' }
+  }
+}
+
+export async function persistDistanceActivity(activity: DistanceActivity) {
+  try {
+    const db = await getDb()
+    
+    // Insert the distance activity
+    await db.insert(actividades_distancia).values({
+      id: createId(),
+      actividad_id: activity.activityId,
+      distancia: activity.distance,
+      tiempo: activity.time,
+      ritmo: activity.ritmo
+    })
+
+    return { success: true }
+  } catch (error) {
+    console.error('Error persisting distance activity:', error)
+    return { success: false, error: 'Failed to persist distance activity' }
   }
 }
