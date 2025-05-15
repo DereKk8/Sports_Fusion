@@ -65,7 +65,7 @@ export async function persistSelectedActivities(selectedSports: SelectedSport[])
     const activitiesToInsert = uniqueSportsArray.map(sport => ({
       id: createId(),
       sesion_id: sessionId,
-      modo: sport.category.title as "fuerza" | "duracion" | "distancia_tiempo",
+      modo: sport.category.title as "Fuerza" | "Duración" | "Distancia + Tiempo",
       deporte: sport.name
     }))
 
