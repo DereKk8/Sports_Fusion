@@ -1,7 +1,7 @@
 "use client"
 
-import { useState } from "react"
-import { ChevronRight, Save, RotateCcw, Clock } from "lucide-react"
+import { useState, useEffect } from "react"
+import { ChevronRight, Save, RotateCcw, Clock, Check } from "lucide-react"
 import { Button } from "@/app/components/ui/button"
 import { Input } from "@/app/components/ui/input"
 import { Label } from "@/app/components/ui/label"
@@ -9,15 +9,32 @@ import { Card, CardContent } from "@/app/components/ui/card"
 import { persistDurationActivity } from "../actions"
 import { useRouter } from "next/navigation"
 import { LoadingState } from "@/app/dashboard/registrar-actividades/Components/loading-state"
+import { useSearchParams } from "next/navigation"
+import { Suspense } from "react"
 
-export default function RegistroDuracion() {
+function RegistroDuracionContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  
+  // Get activity details from URL params
+  const activityId = searchParams.get('activityId') || '';
+  const sessionId = searchParams.get('sessionId') || '';
+  const activityName = searchParams.get('name') || 'Actividad';
+  
   const [horas, setHoras] = useState<number | string>("")
   const [minutos, setMinutos] = useState<number | string>("")
   const [segundos, setSegundos] = useState<number | string>("")
   const [error, setError] = useState<string>("")
   const [success, setSuccess] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
+  const [showSuccessState, setShowSuccessState] = useState(false);
+  
+  // Verify required parameters
+  useEffect(() => {
+    if (!activityId || !sessionId) {
+      router.replace('/dashboard/registrar-actividades');
+    }
+  }, [activityId, sessionId, router]);
 
   // Función para convertir horas, minutos y segundos a segundos totales
   const convertToSeconds = (h: number | string, m: number | string, s: number | string): number => {
@@ -112,33 +129,70 @@ export default function RegistroDuracion() {
       
       if (totalSeconds === 0) {
         setError("Por favor ingresa un tiempo válido")
+        setIsLoading(false)
         return
       }
 
       const result = await persistDurationActivity({
-        id: '', // La función generará este ID
-        activityId: '', // Necesitarás pasar esto desde la pantalla anterior
+        id: '',
+        activityId: activityId,
         duration: totalSeconds
       })
 
       if (result.success) {
         setSuccess(true)
-        // Reiniciar el formulario
-        handleReset()
+        setShowSuccessState(true)
+        
+        // Store the activity data in local storage for summary
+        const existingData = localStorage.getItem('registeredActivities') || '{}';
+        const parsedData = JSON.parse(existingData);
+        
+        parsedData[activityId] = {
+          type: 'duration',
+          name: activityName,
+          duration: totalSeconds
+        };
+        
+        localStorage.setItem('registeredActivities', JSON.stringify(parsedData));
+        
+        // Auto-navigate back to the flow after success
+        setTimeout(() => {
+          router.push(`/dashboard/registrar-actividades/flujo-registro`);
+        }, 1500);
       } else {
         setError("Error al guardar el registro: " + result.error)
+        setIsLoading(false)
       }
     } catch (err) {
       console.error("Error:", err)
       setError("Error al guardar el registro")
-    } finally {
       setIsLoading(false)
     }
   }
 
   return (
     <div className="fixed inset-0 min-h-screen bg-[#050505] text-white overflow-auto">
-      {isLoading && <LoadingState />}
+      {isLoading && (
+        <div className="fixed inset-0 bg-[#050505]/90 backdrop-blur-sm z-50 flex items-center justify-center">
+          <div className="text-center">
+            <LoadingState />
+            <p className="mt-4 text-gray-400">Guardando registro...</p>
+          </div>
+        </div>
+      )}
+
+      {showSuccessState && (
+        <div className="fixed inset-0 bg-[#050505]/90 backdrop-blur-sm z-50 flex items-center justify-center">
+          <div className="text-center">
+            <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-green-500/20 flex items-center justify-center">
+              <Check className="w-8 h-8 text-green-500" />
+            </div>
+            <h3 className="text-2xl font-medium text-white mb-2">¡Registro guardado!</h3>
+            <p className="text-gray-400">Redirigiendo al flujo de registro...</p>
+          </div>
+        </div>
+      )}
+
       {/* Gradient background */}
       <div className="absolute top-0 left-0 w-full h-64 bg-gradient-to-b from-[#0A0A0A] to-transparent opacity-50 pointer-events-none z-0"></div>
       <div className="relative z-10 max-w-6xl mx-auto px-8 py-12">
@@ -147,14 +201,14 @@ export default function RegistroDuracion() {
           <div>
             <div className="flex items-center gap-4 mb-4">
               <Button 
-              onClick={() => router.back()}
+              onClick={() => router.push('/dashboard/registrar-actividades/flujo-registro')}
               variant="outline" className="text-black border-gray-700 hover:bg-gray-800">
                 Volver
               </Button>
             </div>
             <h1 className="text-4xl font-bold text-white tracking-tight">
               <span className="bg-clip-text text-transparent bg-gradient-to-r from-white to-gray-400">
-                Registro de Duración
+                Registro de {activityName}
               </span>
             </h1>
             <div className="flex items-center text-gray-400 mt-2">
@@ -162,7 +216,9 @@ export default function RegistroDuracion() {
               <ChevronRight className="h-4 w-4 mx-1" />
               <span>Selección de Deportes</span>
               <ChevronRight className="h-4 w-4 mx-1" />
-              <span className="text-white">Duración</span>
+              <span className="text-gray-400">Flujo de Registro</span>
+              <ChevronRight className="h-4 w-4 mx-1" />
+              <span className="text-white">{activityName}</span>
             </div>
           </div>
         </div>
@@ -174,7 +230,7 @@ export default function RegistroDuracion() {
             <CardContent className="p-6">
               <div className="flex items-center mb-6">
                 <Clock className="h-5 w-5 mr-2 text-gray-400" />
-                <h2 className="text-xl font-semibold text-white">Nuevo Registro</h2>
+                <h2 className="text-xl font-semibold text-white">Nuevo Registro: {activityName}</h2>
               </div>
               <form onSubmit={handleSubmit}>
                 <div className="space-y-6">
@@ -337,5 +393,13 @@ export default function RegistroDuracion() {
         </div>
       </div>
     </div>
+  )
+}
+
+export default function RegistroDuracion() {
+  return (
+    <Suspense fallback={<LoadingState />}>
+      <RegistroDuracionContent />
+    </Suspense>
   )
 }

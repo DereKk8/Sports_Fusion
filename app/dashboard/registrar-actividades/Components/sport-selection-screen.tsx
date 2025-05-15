@@ -5,6 +5,7 @@ import { SportCategory } from "./sport-category"
 import { ArrowRight, ChevronRight } from "lucide-react"
 import { persistSelectedActivities } from "../actions"
 import { LoadingState } from "./loading-state"
+import { useRouter } from "next/navigation"
 
 // Definición de los deportes por categoría
 const sportsData = [
@@ -64,6 +65,8 @@ const sportsData = [
 export function SportSelectionScreen() {
   const [selectedSports, setSelectedSports] = useState<string[]>([])
   const [isLoading, setIsLoading] = useState(false)
+  const [error, setError] = useState("")
+  const router = useRouter()
 
   const toggleSport = (sportId: string) => {
     setSelectedSports((prev) => (prev.includes(sportId) ? prev.filter((id) => id !== sportId) : [...prev, sportId]))
@@ -73,9 +76,14 @@ export function SportSelectionScreen() {
     if (selectedSports.length === 0) return
 
     setIsLoading(true)
+    setError("")
+    
     try {
+      // Ensure unique sport IDs only
+      const uniqueSports = Array.from(new Set(selectedSports))
+      
       // Map selected sports to the required format
-      const selectedSportsData = selectedSports.map(sportId => {
+      const selectedSportsData = uniqueSports.map(sportId => {
         const category = sportsData.find(cat => cat.sports.some(s => s.id === sportId))
         const sport = category?.sports.find(s => s.id === sportId)
         
@@ -92,13 +100,18 @@ export function SportSelectionScreen() {
       const result = await persistSelectedActivities(selectedSportsData)
       
       if (result.success) {
-        // TODO: Navigate to next step or show success message
-        console.log('Activities persisted successfully:', result.sessionId)
+        // Store the sessionId and the full activities data with database IDs in session storage
+        sessionStorage.setItem('currentSessionId', result.sessionId || '')
+        sessionStorage.setItem('selectedActivities', JSON.stringify(result.activities || []))
+        
+        // Navigate to the first step of registration flow
+        router.push("/dashboard/registrar-actividades/flujo-registro")
       } else {
-        console.error('Failed to persist activities:', result.error)
+        setError("Error al guardar las actividades: " + (result.error || "Inténtalo nuevamente"))
       }
     } catch (error) {
       console.error('Error:', error)
+      setError("Ocurrió un error al guardar las actividades")
     } finally {
       setIsLoading(false)
     }
@@ -126,7 +139,10 @@ export function SportSelectionScreen() {
         </div>
 
         <div className="flex items-center gap-4">
-          <button className="px-4 py-2 rounded-md border border-[#222222] text-gray-300 hover:bg-[#111111] transition-colors">
+          <button 
+            className="px-4 py-2 rounded-md border border-[#222222] text-gray-300 hover:bg-[#111111] transition-colors"
+            onClick={() => router.push("/dashboard")}
+          >
             Cancelar
           </button>
           <button
@@ -143,6 +159,12 @@ export function SportSelectionScreen() {
           </button>
         </div>
       </div>
+
+      {error && (
+        <div className="bg-red-500/20 border border-red-500/50 text-red-200 px-4 py-3 rounded-lg mb-6">
+          {error}
+        </div>
+      )}
 
       {/* Contenido principal */}
       <div className="flex gap-8">

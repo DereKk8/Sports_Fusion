@@ -3,7 +3,7 @@
 import type React from "react"
 
 import { useState, useEffect, useCallback } from "react"
-import { ChevronRight, Save, RotateCcw, Clock, MapPin, Route } from "lucide-react"
+import { ChevronRight, Save, RotateCcw, Clock, MapPin, Route, Check } from "lucide-react"
 import { Button } from "@/app/components/ui/button"
 import { Input } from "@/app/components/ui/input"
 import { Label } from "@/app/components/ui/label"
@@ -11,13 +11,14 @@ import { Card, CardContent } from "@/app/components/ui/card"
 import { persistDistanceActivity } from "../actions"
 import { LoadingState } from "../Components/loading-state"
 import { useRouter } from "next/navigation"
+import { useSearchParams } from "next/navigation"
+import { Suspense } from "react"
 
-export default function RegistroDistanciaTiempo() {
+function RegistroDistanciaTiempoContent() {
   // Estado para los campos de tiempo
   const [horas, setHoras] = useState<number | string>("")
   const [minutos, setMinutos] = useState<number | string>("")
   const [segundos, setSegundos] = useState<number | string>("")
-  const [error, setError] = useState<string>("")
 
   // Estado para el campo de distancia
   const [distancia, setDistancia] = useState<number | string>("")
@@ -27,9 +28,24 @@ export default function RegistroDistanciaTiempo() {
 
   // Estado para el proceso de carga
   const [isLoading, setIsLoading] = useState(false)
+  const [error, setError] = useState<string>("")
   const [success, setSuccess] = useState(false)
+  const [showSuccessState, setShowSuccessState] = useState(false)
   
   const router = useRouter()
+  const searchParams = useSearchParams()
+  
+  // Get activity details from URL params
+  const activityId = searchParams.get('activityId') || '';
+  const sessionId = searchParams.get('sessionId') || '';
+  const activityName = searchParams.get('name') || 'Actividad';
+  
+  // Verify required parameters
+  useEffect(() => {
+    if (!activityId || !sessionId) {
+      router.replace('/dashboard/registrar-actividades');
+    }
+  }, [activityId, sessionId, router]);
 
   // Función para manejar cambios en los campos de entrada de tiempo
   const handleHorasChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -129,6 +145,7 @@ export default function RegistroDistanciaTiempo() {
     e.preventDefault()
     setSuccess(false)
     setError("")
+    setIsLoading(true)
     
     // Convertir todos los valores a números
     const horasNum = horas === "" ? 0 : Number.parseInt(horas.toString())
@@ -142,35 +159,55 @@ export default function RegistroDistanciaTiempo() {
     // Validar que se hayan ingresado datos
     if (tiempoTotalSegundos === 0) {
       setError("Por favor ingresa un tiempo válido")
+      setIsLoading(false)
       return
     }
     
     if (distanciaNum <= 0) {
       setError("Por favor ingresa una distancia válida")
+      setIsLoading(false)
       return
     }
     
     try {
-      setIsLoading(true)
-      
-      // Enviar los datos
-      await persistDistanceActivity({
-        id: '', // Se generará automáticamente
-        activityId: '', // Necesitaría pasarse desde la pantalla anterior
+      const result = await persistDistanceActivity({
+        id: '',
+        activityId: activityId,
         distance: distanciaNum,
         time: tiempoTotalSegundos,
         ritmo: tiempoTotalSegundos / distanciaNum
-      })
-      
-      // Mostrar mensaje de éxito
-      setSuccess(true)
-      // Reiniciar el formulario
-      handleReset()
-    } catch (error) {
-      console.error("Error al guardar la actividad:", error)
-      setError("Ocurrió un error al guardar la actividad. Por favor intenta nuevamente.")
-    } finally {
-      setIsLoading(false)
+      });
+
+      if (result.success) {
+        setSuccess(true);
+        setShowSuccessState(true);
+        
+        // Store the activity data in local storage for summary
+        const existingData = localStorage.getItem('registeredActivities') || '{}';
+        const parsedData = JSON.parse(existingData);
+        
+        parsedData[activityId] = {
+          type: 'distance',
+          name: activityName,
+          distance: distanciaNum,
+          time: tiempoTotalSegundos,
+          ritmo: calcularRitmo()
+        };
+        
+        localStorage.setItem('registeredActivities', JSON.stringify(parsedData));
+        
+        // Auto-navigate back to the flow after success
+        setTimeout(() => {
+          router.push(`/dashboard/registrar-actividades/flujo-registro`);
+        }, 1500);
+      } else {
+        setError("Error al guardar el registro: " + result.error);
+        setIsLoading(false);
+      }
+    } catch (err) {
+      setError("Error al guardar el registro");
+      console.error(err);
+      setIsLoading(false);
     }
   }
 
@@ -211,7 +248,27 @@ export default function RegistroDistanciaTiempo() {
 
   return (
     <div className="fixed inset-0 min-h-screen bg-[#050505] text-white overflow-auto">
-      {isLoading && <LoadingState />}
+      {isLoading && (
+        <div className="fixed inset-0 bg-[#050505]/90 backdrop-blur-sm z-50 flex items-center justify-center">
+          <div className="text-center">
+            <LoadingState />
+            <p className="mt-4 text-gray-400">Guardando registro...</p>
+          </div>
+        </div>
+      )}
+
+      {showSuccessState && (
+        <div className="fixed inset-0 bg-[#050505]/90 backdrop-blur-sm z-50 flex items-center justify-center">
+          <div className="text-center">
+            <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-green-500/20 flex items-center justify-center">
+              <Check className="w-8 h-8 text-green-500" />
+            </div>
+            <h3 className="text-2xl font-medium text-white mb-2">¡Registro guardado!</h3>
+            <p className="text-gray-400">Redirigiendo al flujo de registro...</p>
+          </div>
+        </div>
+      )}
+
       {/* Gradient background */}
       <div className="absolute top-0 left-0 w-full h-64 bg-gradient-to-b from-[#0A0A0A] to-transparent opacity-50 pointer-events-none z-0"></div>
       <div className="relative z-10 max-w-6xl mx-auto px-8 py-12">
@@ -219,13 +276,13 @@ export default function RegistroDistanciaTiempo() {
         <div className="flex justify-between items-center mb-8">
           <div>
             <div className="flex items-center gap-4 mb-4">
-              <Button variant="outline" className="text-black border-gray-700 hover:bg-gray-800" onClick={() => router.back()}>
+              <Button variant="outline" className="text-black border-gray-700 hover:bg-gray-800" onClick={() => router.push('/dashboard/registrar-actividades/flujo-registro')}>
                 Volver
               </Button>
             </div>
             <h1 className="text-4xl font-bold text-white tracking-tight">
               <span className="bg-clip-text text-transparent bg-gradient-to-r from-white to-gray-400">
-                Registro de Distancia y Tiempo
+                Registro de {activityName}
               </span>
             </h1>
             <div className="flex items-center text-gray-400 mt-2">
@@ -233,7 +290,9 @@ export default function RegistroDistanciaTiempo() {
               <ChevronRight className="h-4 w-4 mx-1" />
               <span>Selección de Deportes</span>
               <ChevronRight className="h-4 w-4 mx-1" />
-              <span className="text-white">Carrera</span>
+              <span className="text-gray-400">Flujo de Registro</span>
+              <ChevronRight className="h-4 w-4 mx-1" />
+              <span className="text-white">{activityName}</span>
             </div>
           </div>
         </div>
@@ -245,7 +304,7 @@ export default function RegistroDistanciaTiempo() {
             <CardContent className="p-6">
               <div className="flex items-center mb-6">
                 <Route className="h-5 w-5 mr-2 text-gray-400" />
-                <h2 className="text-xl font-semibold text-white">Nuevo Registro</h2>
+                <h2 className="text-xl font-semibold text-white">Nuevo Registro: {activityName}</h2>
               </div>
               <form onSubmit={handleSubmit}>
                 <div className="space-y-8">
@@ -451,7 +510,7 @@ export default function RegistroDistanciaTiempo() {
                     </Button>
                   </div>
                   {error && <div className="text-red-400 pt-2">{error}</div>}
-                  {success && <div className="text-green-400 pt-2">Registro guardado correctamente.</div>}
+                  {success && <div className="text-green-400 pt-2">Registro guardado correctamente</div>}
                 </div>
               </form>
             </CardContent>
@@ -489,5 +548,13 @@ export default function RegistroDistanciaTiempo() {
         </div>
       </div>
     </div>
+  )
+}
+
+export default function RegistroDistanciaTiempo() {
+  return (
+    <Suspense fallback={<LoadingState />}>
+      <RegistroDistanciaTiempoContent />
+    </Suspense>
   )
 }
