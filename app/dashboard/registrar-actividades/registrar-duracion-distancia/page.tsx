@@ -276,7 +276,7 @@ function RegistroDistanciaTiempoContent() {
         <div className="flex justify-between items-center mb-8">
           <div>
             <div className="flex items-center gap-4 mb-4">
-              <Button variant="outline" className="text-black border-gray-700 hover:bg-gray-800" onClick={() => router.push('/dashboard/registrar-actividades/flujo-registro')}>
+              <Button variant="outline" className="text-white border-gray-700 hover:bg-gray-800" onClick={() => router.push('/dashboard/registrar-actividades/flujo-registro')}>
                 Volver
               </Button>
             </div>

@@ -202,7 +202,7 @@ function RegistroDuracionContent() {
             <div className="flex items-center gap-4 mb-4">
               <Button 
               onClick={() => router.push('/dashboard/registrar-actividades/flujo-registro')}
-              variant="outline" className="text-black border-gray-700 hover:bg-gray-800">
+              variant="outline" className="text-white border-gray-700 hover:bg-gray-800">
                 Volver
               </Button>
             </div>

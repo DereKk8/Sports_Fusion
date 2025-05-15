@@ -179,7 +179,7 @@ export default function RegistrationFlow() {
             <div className="flex items-center gap-4 mb-4">
               <Button 
                 variant="outline" 
-                className="text-black border-gray-700 hover:bg-gray-800"
+                className="text-white border-gray-700 hover:bg-gray-800"
                 onClick={() => router.back()}
               >
                 Volver
@@ -353,7 +353,7 @@ export default function RegistrationFlow() {
                 <div className="pt-6 mt-4 border-t border-gray-800">
                   <Button
                     variant="outline"
-                    className="w-full text-red-400 border-gray-800 hover:bg-gray-800 hover:text-red-300"
+                    className="w-full bg-white text-red-400 border-gray-800 hover:bg-gray-100 hover:text-red-300"
                     onClick={cancelRegistration}
                   >
                     <X className="h-4 w-4 mr-2" /> Cancelar registro
