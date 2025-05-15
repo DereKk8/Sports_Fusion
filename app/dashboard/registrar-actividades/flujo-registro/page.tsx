@@ -56,7 +56,7 @@ export default function RegistrationFlow() {
       localStorage.removeItem("registeredActivities")
       
       // Navigate to summary or dashboard
-      router.push("/dashboard/actividades")
+      router.push("/dashboard")
     } catch (err) {
       console.error("Error finishing registration:", err)
     }
@@ -148,7 +148,7 @@ export default function RegistrationFlow() {
       // Clear session storage and redirect
       sessionStorage.removeItem("currentSessionId")
       sessionStorage.removeItem("selectedActivities")
-      router.push("/dashboard")
+      router.push("/dashboard/registrar-actividades")
     } catch (err) {
       console.error("Error canceling registration:", err)
       setError("Error al cancelar el registro")

@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { ChevronRight, Save, RotateCcw, Clock } from "lucide-react"
+import { ChevronRight, Save, RotateCcw, Clock, Check } from "lucide-react"
 import { Button } from "@/app/components/ui/button"
 import { Input } from "@/app/components/ui/input"
 import { Label } from "@/app/components/ui/label"
@@ -27,6 +27,7 @@ function RegistroDuracionContent() {
   const [error, setError] = useState<string>("")
   const [success, setSuccess] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
+  const [showSuccessState, setShowSuccessState] = useState(false);
   
   // Verify required parameters
   useEffect(() => {
@@ -140,6 +141,7 @@ function RegistroDuracionContent() {
 
       if (result.success) {
         setSuccess(true)
+        setShowSuccessState(true)
         
         // Store the activity data in local storage for summary
         const existingData = localStorage.getItem('registeredActivities') || '{}';
@@ -159,18 +161,38 @@ function RegistroDuracionContent() {
         }, 1500);
       } else {
         setError("Error al guardar el registro: " + result.error)
+        setIsLoading(false)
       }
     } catch (err) {
       console.error("Error:", err)
       setError("Error al guardar el registro")
-    } finally {
       setIsLoading(false)
     }
   }
 
   return (
     <div className="fixed inset-0 min-h-screen bg-[#050505] text-white overflow-auto">
-      {isLoading && <LoadingState />}
+      {isLoading && (
+        <div className="fixed inset-0 bg-[#050505]/90 backdrop-blur-sm z-50 flex items-center justify-center">
+          <div className="text-center">
+            <LoadingState />
+            <p className="mt-4 text-gray-400">Guardando registro...</p>
+          </div>
+        </div>
+      )}
+
+      {showSuccessState && (
+        <div className="fixed inset-0 bg-[#050505]/90 backdrop-blur-sm z-50 flex items-center justify-center">
+          <div className="text-center">
+            <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-green-500/20 flex items-center justify-center">
+              <Check className="w-8 h-8 text-green-500" />
+            </div>
+            <h3 className="text-2xl font-medium text-white mb-2">¡Registro guardado!</h3>
+            <p className="text-gray-400">Redirigiendo al flujo de registro...</p>
+          </div>
+        </div>
+      )}
+
       {/* Gradient background */}
       <div className="absolute top-0 left-0 w-full h-64 bg-gradient-to-b from-[#0A0A0A] to-transparent opacity-50 pointer-events-none z-0"></div>
       <div className="relative z-10 max-w-6xl mx-auto px-8 py-12">
