@@ -21,7 +21,7 @@ export const sesiones = singlestoreTable("sesiones", {
 export const actividades = singlestoreTable("actividades", {
   id: varchar("id", { length: 36 }).primaryKey().$defaultFn(() => createId()),
   sesion_id: varchar("sesion_id", { length: 36 }).notNull(),
-  modo: text("modo").notNull().$type<"fuerza" | "duracion" | "distancia_tiempo">(),
+  modo: text("modo").notNull().$type<"Fuerza" | "Duración" | "Distancia + Tiempo">(),
   deporte: text("deporte").notNull()
 });
 
