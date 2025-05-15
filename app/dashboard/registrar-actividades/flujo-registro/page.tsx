@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback, useMemo } from "react"
 import { useRouter } from "next/navigation"
 import { ChevronRight, Check, Save, X } from "lucide-react"
 import { Button } from "@/app/components/ui/button"
@@ -32,7 +32,10 @@ export default function RegistrationFlow() {
   const distanceActivities = selectedActivities.filter(activity => activity.category.id === "distance")
 
   // All activities in sequence for registration
-  const allActivitiesInOrder = [...strengthActivities, ...durationActivities, ...distanceActivities]
+  const allActivitiesInOrder = useMemo(() => 
+    [...strengthActivities, ...durationActivities, ...distanceActivities], 
+    [strengthActivities, durationActivities, distanceActivities]
+  )
 
   // Check if an activity has been completed
   const isActivityCompleted = (activityId: string) => {
@@ -43,6 +46,21 @@ export default function RegistrationFlow() {
     
     return parsedActivities[activityId] !== undefined
   }
+
+  // Finish the registration process
+  const finishRegistration = useCallback(() => {
+    try {
+      // Clear all stored data
+      sessionStorage.removeItem("currentSessionId")
+      sessionStorage.removeItem("selectedActivities")
+      localStorage.removeItem("registeredActivities")
+      
+      // Navigate to summary or dashboard
+      router.push("/dashboard/actividades")
+    } catch (err) {
+      console.error("Error finishing registration:", err)
+    }
+  }, [router])
 
   // Check if there are any completed activities and update index
   useEffect(() => {
@@ -63,7 +81,7 @@ export default function RegistrationFlow() {
         finishRegistration()
       }
     }
-  }, [currentActivityIndex, allActivitiesInOrder, isLoading])
+  }, [currentActivityIndex, allActivitiesInOrder, isLoading, finishRegistration])
 
   useEffect(() => {
     // Get session data from session storage
@@ -135,21 +153,6 @@ export default function RegistrationFlow() {
       console.error("Error canceling registration:", err)
       setError("Error al cancelar el registro")
       setIsLoading(false)
-    }
-  }
-
-  // Finish the registration process
-  const finishRegistration = () => {
-    try {
-      // Clear all stored data
-      sessionStorage.removeItem("currentSessionId")
-      sessionStorage.removeItem("selectedActivities")
-      localStorage.removeItem("registeredActivities")
-      
-      // Navigate to summary or dashboard
-      router.push("/dashboard/actividades")
-    } catch (err) {
-      console.error("Error finishing registration:", err)
     }
   }
 
