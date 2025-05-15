@@ -5,19 +5,34 @@ import { Button } from "@/app/components/ui/button"
 import { Input } from "@/app/components/ui/input"
 import { Label } from "@/app/components/ui/label"
 import { Card, CardContent } from "@/app/components/ui/card"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
+import { useSearchParams } from "next/navigation"
 import { persistStrenghActivity } from "../actions"
 import { LoadingState } from "@/app/dashboard/registrar-actividades/Components/loading-state"
 
 export default function RegistroFuerza() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  
+  // Get activity details from URL params
+  const activityId = searchParams.get('activityId') || '';
+  const sessionId = searchParams.get('sessionId') || '';
+  const activityName = searchParams.get('name') || 'Actividad';
+  
   const [series, setSeries] = useState("");
   const [repeticiones, setRepeticiones] = useState("");
   const [peso, setPeso] = useState("");
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  
+  // Verify required parameters
+  useEffect(() => {
+    if (!activityId || !sessionId) {
+      router.replace('/dashboard/registrar-actividades');
+    }
+  }, [activityId, sessionId, router]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -33,8 +48,8 @@ export default function RegistroFuerza() {
 
     try {
       const result = await persistStrenghActivity({
-        id: '',  // The function will generate this
-        activityId: '',  // You'll need to pass this from the previous screen
+        id: '',
+        activityId: activityId,
         series: parseInt(series),
         repetitions: parseInt(repeticiones),
         weight: parseFloat(peso)
@@ -42,9 +57,25 @@ export default function RegistroFuerza() {
 
       if (result.success) {
         setSuccess(true);
-        setSeries("");
-        setRepeticiones("");
-        setPeso("");
+        
+        // Store the activity data in local storage for summary
+        const existingData = localStorage.getItem('registeredActivities') || '{}';
+        const parsedData = JSON.parse(existingData);
+        
+        parsedData[activityId] = {
+          type: 'strength',
+          name: activityName,
+          series: parseInt(series),
+          repetitions: parseInt(repeticiones),
+          weight: parseFloat(peso)
+        };
+        
+        localStorage.setItem('registeredActivities', JSON.stringify(parsedData));
+        
+        // Auto-navigate back to the flow after success
+        setTimeout(() => {
+          router.push(`/dashboard/registrar-actividades/flujo-registro`);
+        }, 1500);
       } else {
         setError("Error al guardar el registro: " + result.error);
       }
@@ -75,7 +106,7 @@ export default function RegistroFuerza() {
           <div>
             <div className="flex items-center gap-4 mb-4">
               <Button
-                onClick={() => router.back()}
+                onClick={() => router.push('/dashboard/registrar-actividades/flujo-registro')}
                 variant="outline"
                 className="text-black border-gray-700 hover:bg-gray-500"
               >
@@ -84,7 +115,7 @@ export default function RegistroFuerza() {
             </div>
             <h1 className="text-4xl font-bold text-white tracking-tight">
               <span className="bg-clip-text text-transparent bg-gradient-to-r from-white to-gray-400">
-                Registro de Fuerza
+                Registro de {activityName}
               </span>
             </h1>
             <div className="flex items-center text-gray-400 mt-2">
@@ -92,7 +123,9 @@ export default function RegistroFuerza() {
               <ChevronRight className="h-4 w-4 mx-1" />
               <span>Selección de Deportes</span>
               <ChevronRight className="h-4 w-4 mx-1" />
-              <span className="text-white">Fuerza</span>
+              <span className="text-gray-400">Flujo de Registro</span>
+              <ChevronRight className="h-4 w-4 mx-1" />
+              <span className="text-white">{activityName}</span>
             </div>
           </div>
         </div>
@@ -104,7 +137,7 @@ export default function RegistroFuerza() {
             <CardContent className="p-6">
               <div className="flex items-center mb-6">
                 <Dumbbell className="h-5 w-5 mr-2 text-gray-400" />
-                <h2 className="text-xl font-semibold text-white">Nuevo Registro</h2>
+                <h2 className="text-xl font-semibold text-white">Nuevo Registro: {activityName}</h2>
               </div>
               <form onSubmit={handleSubmit}>
                 <div className="space-y-6">
@@ -162,7 +195,7 @@ export default function RegistroFuerza() {
                       disabled={isLoading}
                     >
                       {isLoading ? (
-                        <span>Guardando...</span>
+                        <LoadingState />
                       ) : (
                         <>
                           <Save className="h-4 w-4 mr-2" />

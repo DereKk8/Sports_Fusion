@@ -3,6 +3,7 @@
 import { getDb } from "@/server/db"
 import { sesiones, actividades, actividades_fuerza, actividades_duracion, actividades_distancia } from "@/server/db/schema"
 import { createId } from '@paralleldrive/cuid2'
+import { eq } from 'drizzle-orm'
 
 type SelectedSport = {
   id: string
@@ -48,8 +49,20 @@ export async function persistSelectedActivities(selectedSports: SelectedSport[])
       updated_at: new Date()
     })
 
-    // Insert all activities in a single transaction
-    const activitiesToInsert = selectedSports.map(sport => ({
+    // Create activity entries based on unique sports
+    // First, deduplicate sports by ID
+    const uniqueSports = selectedSports.reduce((acc: Record<string, SelectedSport>, sport) => {
+      if (!acc[sport.id]) {
+        acc[sport.id] = sport;
+      }
+      return acc;
+    }, {});
+    
+    // Convert back to array
+    const uniqueSportsArray = Object.values(uniqueSports);
+    
+    // Insert unique activities
+    const activitiesToInsert = uniqueSportsArray.map(sport => ({
       id: createId(),
       sesion_id: sessionId,
       modo: sport.category.title as "fuerza" | "duracion" | "distancia_tiempo",
@@ -58,7 +71,17 @@ export async function persistSelectedActivities(selectedSports: SelectedSport[])
 
     await db.insert(actividades).values(activitiesToInsert)
 
-    return { success: true, sessionId }
+    // Return the created activities with their IDs for the next steps
+    return { 
+      success: true, 
+      sessionId,
+      activities: activitiesToInsert.map((activity, index) => ({
+        id: activity.id,
+        sportId: uniqueSportsArray[index].id,
+        name: uniqueSportsArray[index].name,
+        category: uniqueSportsArray[index].category
+      }))
+    }
   } catch (error) {
     console.error('Error persisting activities:', error)
     return { success: false, error: 'Failed to persist activities' }
@@ -120,5 +143,44 @@ export async function persistDistanceActivity(activity: DistanceActivity) {
   } catch (error) {
     console.error('Error persisting distance activity:', error)
     return { success: false, error: 'Failed to persist distance activity' }
+  }
+}
+
+export async function deleteSession(sessionId: string) {
+  try {
+    const db = await getDb()
+    
+    //Get activity id from session id
+    const actividad_id = await db.select({ id: actividades.id })
+      .from(actividades)
+      .where(eq(actividades.sesion_id, sessionId))
+    
+    // Delete all related activity data
+      await db.delete(actividades_fuerza)
+      .where(eq(actividades_fuerza.actividad_id, actividad_id[0].id))
+    
+    await db.delete(actividades_duracion)
+      .where(eq(actividades_duracion.actividad_id, actividad_id[0].id))
+
+    await db.delete(actividades_distancia)
+      .where(eq(actividades_distancia.actividad_id, actividad_id[0].id))
+    
+
+    
+    
+    
+    
+    // Delete all activities for this session
+    await db.delete(actividades)
+      .where(eq(actividades.sesion_id, sessionId))
+    
+    // Delete the session itself
+    await db.delete(sesiones)
+      .where(eq(sesiones.id, sessionId))
+    
+    return { success: true }
+  } catch (error) {
+    console.error('Error deleting session:', error)
+    return { success: false, error: 'Failed to delete session' }
   }
 }

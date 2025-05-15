@@ -11,13 +11,13 @@ import { Card, CardContent } from "@/app/components/ui/card"
 import { persistDistanceActivity } from "../actions"
 import { LoadingState } from "../Components/loading-state"
 import { useRouter } from "next/navigation"
+import { useSearchParams } from "next/navigation"
 
 export default function RegistroDistanciaTiempo() {
   // Estado para los campos de tiempo
   const [horas, setHoras] = useState<number | string>("")
   const [minutos, setMinutos] = useState<number | string>("")
   const [segundos, setSegundos] = useState<number | string>("")
-  const [error, setError] = useState<string>("")
 
   // Estado para el campo de distancia
   const [distancia, setDistancia] = useState<number | string>("")
@@ -27,9 +27,23 @@ export default function RegistroDistanciaTiempo() {
 
   // Estado para el proceso de carga
   const [isLoading, setIsLoading] = useState(false)
+  const [error, setError] = useState<string>("")
   const [success, setSuccess] = useState(false)
   
   const router = useRouter()
+  const searchParams = useSearchParams()
+  
+  // Get activity details from URL params
+  const activityId = searchParams.get('activityId') || '';
+  const sessionId = searchParams.get('sessionId') || '';
+  const activityName = searchParams.get('name') || 'Actividad';
+  
+  // Verify required parameters
+  useEffect(() => {
+    if (!activityId || !sessionId) {
+      router.replace('/dashboard/registrar-actividades');
+    }
+  }, [activityId, sessionId, router]);
 
   // Función para manejar cambios en los campos de entrada de tiempo
   const handleHorasChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -156,16 +170,33 @@ export default function RegistroDistanciaTiempo() {
       // Enviar los datos
       await persistDistanceActivity({
         id: '', // Se generará automáticamente
-        activityId: '', // Necesitaría pasarse desde la pantalla anterior
+        activityId: activityId,
         distance: distanciaNum,
         time: tiempoTotalSegundos,
-        ritmo: tiempoTotalSegundos / distanciaNum
+        ritmo: tiempoTotalSegundos / distanciaNum // Calculamos el ritmo en segundos por kilómetro
       })
       
       // Mostrar mensaje de éxito
       setSuccess(true)
-      // Reiniciar el formulario
-      handleReset()
+      
+      // Store the activity data in local storage for summary
+      const existingData = localStorage.getItem('registeredActivities') || '{}';
+      const parsedData = JSON.parse(existingData);
+      
+      parsedData[activityId] = {
+        type: 'distance',
+        name: activityName,
+        distance: distanciaNum,
+        time: tiempoTotalSegundos,
+        ritmo: calcularRitmo()
+      };
+      
+      localStorage.setItem('registeredActivities', JSON.stringify(parsedData));
+      
+      // Auto-navigate back to the flow after success
+      setTimeout(() => {
+        router.push(`/dashboard/registrar-actividades/flujo-registro`);
+      }, 1500);
     } catch (error) {
       console.error("Error al guardar la actividad:", error)
       setError("Ocurrió un error al guardar la actividad. Por favor intenta nuevamente.")
@@ -219,13 +250,13 @@ export default function RegistroDistanciaTiempo() {
         <div className="flex justify-between items-center mb-8">
           <div>
             <div className="flex items-center gap-4 mb-4">
-              <Button variant="outline" className="text-black border-gray-700 hover:bg-gray-800" onClick={() => router.back()}>
+              <Button variant="outline" className="text-black border-gray-700 hover:bg-gray-800" onClick={() => router.push('/dashboard/registrar-actividades/flujo-registro')}>
                 Volver
               </Button>
             </div>
             <h1 className="text-4xl font-bold text-white tracking-tight">
               <span className="bg-clip-text text-transparent bg-gradient-to-r from-white to-gray-400">
-                Registro de Distancia y Tiempo
+                Registro de {activityName}
               </span>
             </h1>
             <div className="flex items-center text-gray-400 mt-2">
@@ -233,7 +264,9 @@ export default function RegistroDistanciaTiempo() {
               <ChevronRight className="h-4 w-4 mx-1" />
               <span>Selección de Deportes</span>
               <ChevronRight className="h-4 w-4 mx-1" />
-              <span className="text-white">Carrera</span>
+              <span className="text-gray-400">Flujo de Registro</span>
+              <ChevronRight className="h-4 w-4 mx-1" />
+              <span className="text-white">{activityName}</span>
             </div>
           </div>
         </div>
@@ -245,7 +278,7 @@ export default function RegistroDistanciaTiempo() {
             <CardContent className="p-6">
               <div className="flex items-center mb-6">
                 <Route className="h-5 w-5 mr-2 text-gray-400" />
-                <h2 className="text-xl font-semibold text-white">Nuevo Registro</h2>
+                <h2 className="text-xl font-semibold text-white">Nuevo Registro: {activityName}</h2>
               </div>
               <form onSubmit={handleSubmit}>
                 <div className="space-y-8">

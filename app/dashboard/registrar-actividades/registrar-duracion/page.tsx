@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { ChevronRight, Save, RotateCcw, Clock } from "lucide-react"
 import { Button } from "@/app/components/ui/button"
 import { Input } from "@/app/components/ui/input"
@@ -9,15 +9,30 @@ import { Card, CardContent } from "@/app/components/ui/card"
 import { persistDurationActivity } from "../actions"
 import { useRouter } from "next/navigation"
 import { LoadingState } from "@/app/dashboard/registrar-actividades/Components/loading-state"
+import { useSearchParams } from "next/navigation"
 
 export default function RegistroDuracion() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  
+  // Get activity details from URL params
+  const activityId = searchParams.get('activityId') || '';
+  const sessionId = searchParams.get('sessionId') || '';
+  const activityName = searchParams.get('name') || 'Actividad';
+  
   const [horas, setHoras] = useState<number | string>("")
   const [minutos, setMinutos] = useState<number | string>("")
   const [segundos, setSegundos] = useState<number | string>("")
   const [error, setError] = useState<string>("")
   const [success, setSuccess] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
+  
+  // Verify required parameters
+  useEffect(() => {
+    if (!activityId || !sessionId) {
+      router.replace('/dashboard/registrar-actividades');
+    }
+  }, [activityId, sessionId, router]);
 
   // Función para convertir horas, minutos y segundos a segundos totales
   const convertToSeconds = (h: number | string, m: number | string, s: number | string): number => {
@@ -112,19 +127,35 @@ export default function RegistroDuracion() {
       
       if (totalSeconds === 0) {
         setError("Por favor ingresa un tiempo válido")
+        setIsLoading(false)
         return
       }
 
       const result = await persistDurationActivity({
-        id: '', // La función generará este ID
-        activityId: '', // Necesitarás pasar esto desde la pantalla anterior
+        id: '',
+        activityId: activityId,
         duration: totalSeconds
       })
 
       if (result.success) {
         setSuccess(true)
-        // Reiniciar el formulario
-        handleReset()
+        
+        // Store the activity data in local storage for summary
+        const existingData = localStorage.getItem('registeredActivities') || '{}';
+        const parsedData = JSON.parse(existingData);
+        
+        parsedData[activityId] = {
+          type: 'duration',
+          name: activityName,
+          duration: totalSeconds
+        };
+        
+        localStorage.setItem('registeredActivities', JSON.stringify(parsedData));
+        
+        // Auto-navigate back to the flow after success
+        setTimeout(() => {
+          router.push(`/dashboard/registrar-actividades/flujo-registro`);
+        }, 1500);
       } else {
         setError("Error al guardar el registro: " + result.error)
       }
@@ -147,14 +178,14 @@ export default function RegistroDuracion() {
           <div>
             <div className="flex items-center gap-4 mb-4">
               <Button 
-              onClick={() => router.back()}
+              onClick={() => router.push('/dashboard/registrar-actividades/flujo-registro')}
               variant="outline" className="text-black border-gray-700 hover:bg-gray-800">
                 Volver
               </Button>
             </div>
             <h1 className="text-4xl font-bold text-white tracking-tight">
               <span className="bg-clip-text text-transparent bg-gradient-to-r from-white to-gray-400">
-                Registro de Duración
+                Registro de {activityName}
               </span>
             </h1>
             <div className="flex items-center text-gray-400 mt-2">
@@ -162,7 +193,9 @@ export default function RegistroDuracion() {
               <ChevronRight className="h-4 w-4 mx-1" />
               <span>Selección de Deportes</span>
               <ChevronRight className="h-4 w-4 mx-1" />
-              <span className="text-white">Duración</span>
+              <span className="text-gray-400">Flujo de Registro</span>
+              <ChevronRight className="h-4 w-4 mx-1" />
+              <span className="text-white">{activityName}</span>
             </div>
           </div>
         </div>
@@ -174,7 +207,7 @@ export default function RegistroDuracion() {
             <CardContent className="p-6">
               <div className="flex items-center mb-6">
                 <Clock className="h-5 w-5 mr-2 text-gray-400" />
-                <h2 className="text-xl font-semibold text-white">Nuevo Registro</h2>
+                <h2 className="text-xl font-semibold text-white">Nuevo Registro: {activityName}</h2>
               </div>
               <form onSubmit={handleSubmit}>
                 <div className="space-y-6">
