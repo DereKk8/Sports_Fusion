@@ -134,6 +134,8 @@ export function SportSelectionScreen() {
           <div className="flex items-center text-gray-400 mt-2">
             <span>Inicio</span>
             <ChevronRight className="h-4 w-4 mx-1" />
+            <span className="flex items-center text-gray-400">Actividades</span>
+            <ChevronRight className="h-4 w-4 mx-1" />
             <span className="text-white">Selección de Deportes</span>
           </div>
         </div>

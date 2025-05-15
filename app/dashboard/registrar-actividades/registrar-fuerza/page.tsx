@@ -131,7 +131,7 @@ function RegistroFuerzaContent() {
               <Button
                 onClick={() => router.push('/dashboard/registrar-actividades/flujo-registro')}
                 variant="outline"
-                className="text-black border-gray-700 hover:bg-gray-500"
+                className="text-white border-gray-700 hover:bg-gray-500"
               >
                 Volver
               </Button>
