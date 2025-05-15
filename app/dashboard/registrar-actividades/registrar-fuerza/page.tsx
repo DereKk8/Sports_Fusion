@@ -1,5 +1,6 @@
 "use client"
 
+import { Suspense } from "react"
 import { ChevronRight, Save, RotateCcw, Dumbbell } from "lucide-react"
 import { Button } from "@/app/components/ui/button"
 import { Input } from "@/app/components/ui/input"
@@ -11,7 +12,7 @@ import { useSearchParams } from "next/navigation"
 import { persistStrenghActivity } from "../actions"
 import { LoadingState } from "@/app/dashboard/registrar-actividades/Components/loading-state"
 
-export default function RegistroFuerza() {
+function RegistroFuerzaContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   
@@ -237,5 +238,13 @@ export default function RegistroFuerza() {
         </div>
       </div>
     </div>
+  )
+}
+
+export default function RegistroFuerza() {
+  return (
+    <Suspense fallback={<LoadingState />}>
+      <RegistroFuerzaContent />
+    </Suspense>
   )
 }
