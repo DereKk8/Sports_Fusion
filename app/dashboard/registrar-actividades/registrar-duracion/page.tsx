@@ -10,8 +10,9 @@ import { persistDurationActivity } from "../actions"
 import { useRouter } from "next/navigation"
 import { LoadingState } from "@/app/dashboard/registrar-actividades/Components/loading-state"
 import { useSearchParams } from "next/navigation"
+import { Suspense } from "react"
 
-export default function RegistroDuracion() {
+function RegistroDuracionContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   
@@ -370,5 +371,13 @@ export default function RegistroDuracion() {
         </div>
       </div>
     </div>
+  )
+}
+
+export default function RegistroDuracion() {
+  return (
+    <Suspense fallback={<LoadingState />}>
+      <RegistroDuracionContent />
+    </Suspense>
   )
 }

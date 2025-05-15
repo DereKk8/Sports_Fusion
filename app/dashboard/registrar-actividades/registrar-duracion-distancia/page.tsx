@@ -12,8 +12,9 @@ import { persistDistanceActivity } from "../actions"
 import { LoadingState } from "../Components/loading-state"
 import { useRouter } from "next/navigation"
 import { useSearchParams } from "next/navigation"
+import { Suspense } from "react"
 
-export default function RegistroDistanciaTiempo() {
+function RegistroDistanciaTiempoContent() {
   // Estado para los campos de tiempo
   const [horas, setHoras] = useState<number | string>("")
   const [minutos, setMinutos] = useState<number | string>("")
@@ -522,5 +523,13 @@ export default function RegistroDistanciaTiempo() {
         </div>
       </div>
     </div>
+  )
+}
+
+export default function RegistroDistanciaTiempo() {
+  return (
+    <Suspense fallback={<LoadingState />}>
+      <RegistroDistanciaTiempoContent />
+    </Suspense>
   )
 }

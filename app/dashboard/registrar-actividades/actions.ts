@@ -150,10 +150,12 @@ export async function deleteSession(sessionId: string) {
   try {
     const db = await getDb()
     
+  
     //Get activity id from session id
     const actividad_id = await db.select({ id: actividades.id })
       .from(actividades)
       .where(eq(actividades.sesion_id, sessionId))
+    
     
     // Delete all related activity data
       await db.delete(actividades_fuerza)
@@ -164,11 +166,8 @@ export async function deleteSession(sessionId: string) {
 
     await db.delete(actividades_distancia)
       .where(eq(actividades_distancia.actividad_id, actividad_id[0].id))
-    
+  
 
-    
-    
-    
     
     // Delete all activities for this session
     await db.delete(actividades)
