@@ -8,6 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/app/components/ui/ca
 import { Input } from "@/app/components/ui/input"
 import { Badge } from "@/app/components/ui/badge"
 import { useRouter } from "next/navigation"
+import { UserButton } from "@clerk/nextjs"
 import { SessionWithActivities } from "../actions"
 import { format } from "date-fns"
 import { es } from "date-fns/locale"
@@ -140,7 +141,7 @@ export function DashboardContent({ initialSessions }: { initialSessions: Session
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-4">
             <Button 
               className="bg-gradient-to-r from-[#4D9FFF] to-[#4DFF9F] text-black hover:opacity-90"
               onClick={handleNuevaActividad}
@@ -148,6 +149,19 @@ export function DashboardContent({ initialSessions }: { initialSessions: Session
               <Plus className="h-4 w-4 mr-2" />
               Nueva Actividad
             </Button>
+            
+            {/* User Button para gestión de cuenta */}
+            <UserButton 
+              appearance={{
+                elements: {
+                  avatarBox: "w-10 h-10",
+                  userButtonPopoverCard: "bg-gray-900 border-gray-700",
+                  userButtonPopoverActionButton: "text-white hover:bg-gray-800",
+                  userButtonPopoverActionButtonText: "text-white",
+                  userButtonPopoverFooter: "bg-gray-900 border-gray-700"
+                }
+              }}
+            />
           </div>
         </div>
 
