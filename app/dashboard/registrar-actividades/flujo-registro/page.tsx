@@ -148,6 +148,10 @@ export default function RegistrationFlow() {
       // Clear session storage and redirect
       sessionStorage.removeItem("currentSessionId")
       sessionStorage.removeItem("selectedActivities")
+      localStorage.removeItem("registeredActivities")
+      
+      // Refrescar datos del servidor antes de navegar
+      router.refresh()
       router.push("/dashboard/registrar-actividades")
     } catch (err) {
       console.error("Error canceling registration:", err)

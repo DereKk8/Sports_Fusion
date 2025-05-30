@@ -4,6 +4,7 @@ import { getDb } from "@/server/db"
 import { sesiones, actividades, actividades_fuerza, actividades_duracion, actividades_distancia } from "@/server/db/schema"
 import { createId } from '@paralleldrive/cuid2'
 import { eq } from 'drizzle-orm'
+import { revalidatePath } from 'next/cache'
 
 type SelectedSport = {
   id: string
@@ -101,6 +102,8 @@ export async function persistStrenghActivity(activity: StrenghActivity) {
       peso: activity.weight
     })
 
+    revalidatePath('/dashboard')
+    revalidatePath('/dashboard/registrar-actividades/flujo-registro')
     return { success: true }
   } catch (error) {
     console.error('Error persisting strength activity:', error)
@@ -119,6 +122,8 @@ export async function persistDurationActivity(activity: DurationActivity) {
       duracion: activity.duration
     })
 
+    revalidatePath('/dashboard')
+    revalidatePath('/dashboard/registrar-actividades/flujo-registro')
     return { success: true }
   } catch (error) {
     console.error('Error persisting duration activity:', error)
@@ -139,6 +144,8 @@ export async function persistDistanceActivity(activity: DistanceActivity) {
       ritmo: activity.ritmo
     })
 
+    revalidatePath('/dashboard')
+    revalidatePath('/dashboard/registrar-actividades/flujo-registro')
     return { success: true }
   } catch (error) {
     console.error('Error persisting distance activity:', error)
@@ -152,22 +159,23 @@ export async function deleteSession(sessionId: string) {
     
   
     //Get activity id from session id
-    const actividad_id = await db.select({ id: actividades.id })
+    const actividad_ids = await db.select({ id: actividades.id })
       .from(actividades)
       .where(eq(actividades.sesion_id, sessionId))
     
-    
-    // Delete all related activity data
-      await db.delete(actividades_fuerza)
-      .where(eq(actividades_fuerza.actividad_id, actividad_id[0].id))
-    
-    await db.delete(actividades_duracion)
-      .where(eq(actividades_duracion.actividad_id, actividad_id[0].id))
+    if (actividad_ids.length > 0) {
+      // Delete all related activity data for each activity
+      for (const activity of actividad_ids) {
+        await db.delete(actividades_fuerza)
+          .where(eq(actividades_fuerza.actividad_id, activity.id))
+        
+        await db.delete(actividades_duracion)
+          .where(eq(actividades_duracion.actividad_id, activity.id))
 
-    await db.delete(actividades_distancia)
-      .where(eq(actividades_distancia.actividad_id, actividad_id[0].id))
-  
-
+        await db.delete(actividades_distancia)
+          .where(eq(actividades_distancia.actividad_id, activity.id))
+      }
+    }
     
     // Delete all activities for this session
     await db.delete(actividades)
@@ -177,6 +185,8 @@ export async function deleteSession(sessionId: string) {
     await db.delete(sesiones)
       .where(eq(sesiones.id, sessionId))
     
+    revalidatePath('/dashboard')
+    revalidatePath('/dashboard/registrar-actividades/flujo-registro')
     return { success: true }
   } catch (error) {
     console.error('Error deleting session:', error)

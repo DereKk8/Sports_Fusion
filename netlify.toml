@@ -1,0 +1,30 @@
+[build]
+  command = "npm run build"
+  publish = ".next"
+
+[build.environment]
+  NEXT_RUNTIME = "nodejs18.x"
+
+# Next.js Edge Runtime
+[[plugins]]
+  package = "@netlify/plugin-nextjs"
+
+# Cache headers for API routes
+[[headers]]
+  for = "/api/*"
+  [headers.values]
+    Cache-Control = "no-store, no-cache, must-revalidate"
+
+# Cache headers for dashboard pages
+[[headers]]
+  for = "/dashboard/*"
+  [headers.values]
+    Cache-Control = "no-cache, must-revalidate"
+    Pragma = "no-cache"
+
+# General page headers
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Frame-Options = "DENY"
+    X-XSS-Protection = "1; mode=block" 
