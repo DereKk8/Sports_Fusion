@@ -9,10 +9,20 @@ import { Input } from "@/app/components/ui/input"
 import { Badge } from "@/app/components/ui/badge"
 import { useRouter } from "next/navigation"
 import { UserButton } from "@clerk/nextjs"
-import { SessionWithActivities } from "../actions"
+import { SessionWithActivities, WeeklyInsight, MonthlyStarSport, RhythmEvolution } from "../actions"
 import { format } from "date-fns"
 import { es } from "date-fns/locale"
 import { LoadingState } from "@/app/dashboard/registrar-actividades/Components/loading-state"
+import { WeeklyInsightCard } from "./weekly-insight"
+import { MonthlyStarSportCard } from "./monthly-star-sport"
+import { RhythmEvolutionCard } from "./rhythm-evolution"
+
+interface DashboardContentProps {
+  initialSessions: SessionWithActivities[]
+  weeklyInsight: WeeklyInsight
+  monthlyStarSport: MonthlyStarSport | null
+  rhythmEvolution: RhythmEvolution | null
+}
 
 type Activity = {
   id: string
@@ -71,7 +81,7 @@ function mapSessionToActivities(sessions: SessionWithActivities[]): Activity[] {
   )
 }
 
-export function DashboardContent({ initialSessions }: { initialSessions: SessionWithActivities[] }) {
+export function DashboardContent({ initialSessions, weeklyInsight, monthlyStarSport, rhythmEvolution }: DashboardContentProps) {
   const router = useRouter()
   const [filtro, setFiltro] = useState<string>("todos")
   const [busqueda, setBusqueda] = useState<string>("")
@@ -194,6 +204,32 @@ export function DashboardContent({ initialSessions }: { initialSessions: Session
               <p className="text-2xl font-bold">{conteoActividades.distancia}</p>
             </CardContent>
           </Card>
+        </div>
+
+        {/* Sección de Insights y Análisis */}
+        <div className="mb-8">
+          <h2 className="text-xl font-semibold text-white mb-4 flex items-center">
+            <span className="bg-clip-text text-transparent bg-gradient-to-r from-white to-gray-400">
+              Análisis y Progreso
+            </span>
+          </h2>
+          
+          <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
+            {/* Weekly Insight - Toma el ancho completo en móvil y desktop */}
+            <div className="lg:col-span-2 xl:col-span-1">
+              <WeeklyInsightCard insight={weeklyInsight} />
+            </div>
+            
+            {/* Monthly Star Sport */}
+            <div>
+              <MonthlyStarSportCard starSport={monthlyStarSport} />
+            </div>
+            
+            {/* Rhythm Evolution - Toma el ancho completo en lg, una columna en xl */}
+            <div className="lg:col-span-2 xl:col-span-1">
+              <RhythmEvolutionCard rhythmData={rhythmEvolution} />
+            </div>
+          </div>
         </div>
 
         {/* Filtros y búsqueda */}
