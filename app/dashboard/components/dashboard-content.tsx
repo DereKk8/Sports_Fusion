@@ -1,7 +1,7 @@
 "use client"
 
 import * as React from "react"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { ChevronRight, Dumbbell, Clock, Route, Plus, Filter, Search } from "lucide-react"
 import { Button } from "@/app/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/app/components/ui/card"
@@ -77,6 +77,17 @@ export function DashboardContent({ initialSessions }: { initialSessions: Session
   const [isLoading, setIsLoading] = useState(false)
 
   const actividades = mapSessionToActivities(initialSessions)
+
+  // Refrescar datos cuando el usuario regrese de registrar actividades
+  useEffect(() => {
+    const handleFocus = () => {
+      // Refrescar datos del servidor cuando la ventana recupere el foco
+      router.refresh()
+    }
+
+    window.addEventListener('focus', handleFocus)
+    return () => window.removeEventListener('focus', handleFocus)
+  }, [router])
 
   const handleNuevaActividad = () => {
     setIsLoading(true)
